@@ -1,0 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+body {
+    font-family: 'Poppins', sans-serif;
+}
+
+.btn-dark:hover {
+    background-color: #333; /* Cor mais escura ao passar o mouse */
+    border-color: #333;
+    transform: translateY(-2px); /* Efeito sutil de levantar */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.nav-link:hover {
+    color: #fff !important; /* Mudar a cor do texto no hover da navbar */
+    transform: translateY(-2px);
+}
+
+header {
+    padding-top: 100px;
+    padding-bottom: 100px;
+}
