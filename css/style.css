@@ -643,3 +643,32 @@ header {
         font-size: 1.5rem;
     }
 }
+/* ... código anterior ... */
+
+/* Header Logo Styles */
+.logo-link {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.logo-img {
+    height: 50px; /* Tamanho ideal para o header */
+    width: auto;  /* Mantém a proporção */
+    display: block;
+    /* Se a imagem tiver fundo preto e não for transparente, isso ajuda a misturar */
+    mix-blend-mode: screen; 
+}
+
+/* ... código anterior ... */
+
+/* Footer Logo Styles */
+.footer-logo {
+    height: 80px; /* Um pouco maior no rodapé para destaque */
+    width: auto;
+    margin-bottom: 1.5rem;
+    display: block;
+    /* mix-blend-mode opcional dependendo do fundo da imagem */
+}
+
+/* ... resto do código ... */
