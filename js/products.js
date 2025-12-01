@@ -6,7 +6,7 @@ export const products = [
         name: "Camisa Alpha Signature",
         category: "casual",
         price: 129.90,
-        image: "images/camisa-destaque.jpg", // Usando a imagem de destaque
+        image: "images/camisa-destaque.jpg", 
         badge: "Mais Vendida"
     },
     {
@@ -36,7 +36,7 @@ export const products = [
         name: "Alpha Urban Fit",
         category: "sport",
         price: 99.90,
-        image: "images/cliente-1.jpg" // Reutilizando img para compor a loja
+        image: "images/cliente-1.jpg"
     },
     {
         id: 6,

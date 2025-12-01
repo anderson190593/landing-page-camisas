@@ -5,6 +5,7 @@
     --bg-color: #0a0a0a;
     --text-color: #f4f4f4;
     --accent-color: #D4AF37; /* Dourado Premium */
+    --accent-hover: #b5952f;
     --card-bg: #141414;
     --border-color: #333;
     --font-main: 'Archivo', sans-serif;
@@ -12,6 +13,8 @@
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
 
 body {
     background-color: var(--bg-color);
@@ -33,6 +36,7 @@ header {
     backdrop-filter: blur(10px);
     z-index: 100;
     border-bottom: 1px solid var(--border-color);
+    transition: all 0.3s ease;
 }
 
 .logo {
@@ -50,6 +54,11 @@ header {
     font-size: 1.2rem;
     cursor: pointer;
     position: relative;
+    transition: transform 0.2s ease;
+}
+
+.cart-trigger:hover {
+    transform: scale(1.1);
 }
 
 .cart-count {
@@ -84,6 +93,7 @@ header {
     font-size: clamp(3rem, 10vw, 6rem);
     line-height: 1;
     margin-bottom: 1rem;
+    animation: fadeUp 1s ease;
 }
 
 .hero-content p {
@@ -92,9 +102,12 @@ header {
     color: #ddd;
     letter-spacing: 2px;
     text-transform: uppercase;
+    animation: fadeUp 1.2s ease;
 }
 
+/* Botão da Coleção com Efeito Suave */
 .btn-cta {
+    display: inline-block;
     padding: 1rem 3rem;
     background-color: var(--text-color);
     color: var(--bg-color);
@@ -102,12 +115,18 @@ header {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
-    transition: all 0.3s;
+    border: 1px solid var(--text-color);
+    /* AQUI ESTÁ A CORREÇÃO DO "CORTE BRUSCO" */
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    animation: fadeUp 1.4s ease;
 }
 
 .btn-cta:hover {
     background-color: var(--accent-color);
+    border-color: var(--accent-color);
     color: #fff;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
 }
 
 /* Shop Section */
@@ -132,12 +151,27 @@ header {
     font-size: 1rem;
     cursor: pointer;
     padding-bottom: 5px;
-    transition: 0.3s;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.filter-btn::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0;
+    left: 0;
+    background-color: var(--accent-color);
+    transition: width 0.3s ease;
 }
 
 .filter-btn.active, .filter-btn:hover {
     color: var(--text-color);
-    border-bottom: 2px solid var(--accent-color);
+}
+
+.filter-btn.active::after, .filter-btn:hover::after {
+    width: 100%;
 }
 
 /* Product Grid */
@@ -150,18 +184,20 @@ header {
 
 .product-card {
     background: var(--card-bg);
-    border-radius: 8px; /* Mais moderno */
+    border-radius: 8px;
     overflow: hidden;
-    transition: transform 0.3s;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
 }
 
 .product-card:hover {
     transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }
 
 .product-image-wrapper {
     position: relative;
-    height: 350px;
+    height: 380px;
     overflow: hidden;
 }
 
@@ -169,41 +205,87 @@ header {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.5s;
+    transition: transform 0.6s ease;
 }
 
 .product-card:hover img {
     transform: scale(1.05);
 }
 
-.add-to-cart-btn {
+/* --- NOVOS BOTÕES DE AÇÃO --- */
+.product-actions {
     position: absolute;
     bottom: 0;
+    left: 0;
     width: 100%;
     padding: 1rem;
-    background: var(--text-color);
-    color: var(--bg-color);
-    border: none;
-    font-weight: bold;
-    cursor: pointer;
+    background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+    display: flex;
+    gap: 10px;
     transform: translateY(100%);
-    transition: transform 0.3s;
+    transition: transform 0.3s ease;
 }
 
-.product-card:hover .add-to-cart-btn {
+.product-card:hover .product-actions {
     transform: translateY(0);
+}
+
+.btn-icon {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(5px);
+    color: #fff;
+    cursor: pointer;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.btn-icon:hover {
+    background: var(--accent-color);
+    color: #000;
+}
+
+/* Feedback de "Adicionado" */
+.btn-icon.added {
+    background: #28a745;
+    transform: scale(1.1);
+}
+
+.btn-buy {
+    flex: 1; /* Ocupa o resto do espaço */
+    border: none;
+    background: var(--text-color);
+    color: var(--bg-color);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.btn-buy:hover {
+    background: var(--accent-color);
+    color: #fff;
 }
 
 .badge {
     position: absolute;
-    top: 10px;
-    left: 10px;
+    top: 15px;
+    left: 15px;
     background: var(--accent-color);
     color: #000;
-    padding: 4px 8px;
+    padding: 5px 10px;
     font-size: 0.75rem;
-    font-weight: bold;
+    font-weight: 800;
     text-transform: uppercase;
+    z-index: 2;
 }
 
 .product-info {
@@ -220,11 +302,12 @@ header {
 .product-info h3 {
     font-size: 1.2rem;
     margin: 5px 0;
+    font-weight: 500;
 }
 
 .product-info .price {
     color: var(--accent-color);
-    font-weight: bold;
+    font-weight: 700;
     font-size: 1.1rem;
 }
 
@@ -235,7 +318,7 @@ header {
     right: -400px;
     width: 400px;
     height: 100%;
-    background: #1a1a1a;
+    background: #111;
     z-index: 200;
     transition: right 0.4s cubic-bezier(0.77, 0, 0.175, 1);
     box-shadow: -5px 0 30px rgba(0,0,0,0.5);
@@ -253,7 +336,10 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    background: #1a1a1a;
 }
+
+.cart-header h2 { font-size: 1.2rem; text-transform: uppercase; letter-spacing: 1px; }
 
 .cart-items {
     flex: 1;
@@ -265,8 +351,9 @@ header {
     display: flex;
     gap: 1rem;
     margin-bottom: 1.5rem;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid #222;
     padding-bottom: 1rem;
+    animation: fadeUp 0.3s ease;
 }
 
 .cart-item img {
@@ -283,30 +370,39 @@ header {
     display: flex;
     align-items: center;
     gap: 10px;
+    background: #222;
+    padding: 2px 5px;
+    border-radius: 4px;
+    width: fit-content;
 }
 
 .quantity-controls button {
-    background: #333;
+    background: none;
     border: none;
     color: #fff;
     width: 25px;
     height: 25px;
     cursor: pointer;
+    font-size: 1rem;
+    transition: color 0.2s;
 }
+
+.quantity-controls button:hover { color: var(--accent-color); }
 
 .remove-btn {
     background: none;
     border: none;
-    color: #666;
+    color: #444;
     margin-left: auto;
     cursor: pointer;
+    transition: color 0.2s;
 }
 
 .remove-btn:hover { color: #ff4444; }
 
 .cart-footer {
-    padding: 1.5rem;
-    background: #111;
+    padding: 2rem;
+    background: #1a1a1a;
     border-top: 1px solid var(--border-color);
 }
 
@@ -314,19 +410,38 @@ header {
     display: flex;
     justify-content: space-between;
     font-size: 1.2rem;
-    font-weight: bold;
-    margin-bottom: 1rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: var(--accent-color);
 }
 
 .checkout-btn {
     width: 100%;
     padding: 1rem;
-    background: var(--accent-color);
+    background: var(--text-color);
     border: none;
-    color: #000;
-    font-weight: bold;
+    color: var(--bg-color);
+    font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 1px;
     cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.checkout-btn:hover {
+    background: var(--accent-color);
+    color: #fff;
+}
+
+.empty-cart-msg {
+    text-align: center;
+    color: #666;
+    margin-top: 2rem;
+}
+
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* Responsivo */
@@ -334,4 +449,7 @@ header {
     .cart-sidebar { width: 100%; right: -100%; }
     .hero-content h1 { font-size: 3rem; }
     .filters { gap: 1rem; flex-wrap: wrap; }
+    
+    /* No mobile, os botões aparecem sempre, não só no hover */
+    .product-actions { transform: translateY(0); }
 }

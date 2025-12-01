@@ -1,13 +1,13 @@
 // js/main.js
 import { products } from './products.js';
 
-// Estado da Aplicação
+// Estado
 const state = {
     cart: JSON.parse(localStorage.getItem('alphaCart')) || [],
     filter: 'all'
 };
 
-// Elementos do DOM
+// Elementos
 const productGrid = document.getElementById('product-grid');
 const cartCount = document.getElementById('cart-count');
 const cartTotal = document.getElementById('cart-total');
@@ -17,9 +17,8 @@ const cartSidebar = document.getElementById('cart-sidebar');
 const openCartBtn = document.getElementById('open-cart');
 const closeCartBtn = document.getElementById('close-cart');
 
-// --- FUNÇÕES CORE ---
+// --- FUNÇÕES DE RENDERIZAÇÃO ---
 
-// 1. Renderizar Produtos
 function renderProducts() {
     productGrid.innerHTML = '';
     
@@ -31,13 +30,20 @@ function renderProducts() {
         const card = document.createElement('div');
         card.className = 'product-card fade-in';
         
+        // AQUI ESTÁ A MUDANÇA: Botões de Ação Separados
         card.innerHTML = `
             <div class="product-image-wrapper">
                 ${product.badge ? `<span class="badge">${product.badge}</span>` : ''}
                 <img src="${product.image}" alt="${product.name}" loading="lazy">
-                <button class="add-to-cart-btn" onclick="addToCart(${product.id})">
-                    <i class="fas fa-shopping-bag"></i> Adicionar
-                </button>
+                
+                <div class="product-actions">
+                    <button class="btn-icon" onclick="addToCart(${product.id})" title="Adicionar ao Carrinho">
+                        <i class="fas fa-cart-plus"></i>
+                    </button>
+                    <button class="btn-buy" onclick="buyNow(${product.id})" title="Comprar Agora">
+                        Comprar
+                    </button>
+                </div>
             </div>
             <div class="product-info">
                 <span class="category">${product.category}</span>
@@ -49,7 +55,9 @@ function renderProducts() {
     });
 }
 
-// 2. Gerenciamento do Carrinho
+// --- LÓGICA DO CARRINHO ---
+
+// Adiciona e apenas notifica (sutil)
 window.addToCart = (id) => {
     const product = products.find(p => p.id === id);
     const existingItem = state.cart.find(item => item.id === id);
@@ -62,7 +70,17 @@ window.addToCart = (id) => {
 
     updateCartUI();
     saveCart();
-    openCart(); // Feedback imediato
+    
+    // Feedback visual rápido no botão (opcional, mas bom para UX)
+    const btn = event.currentTarget;
+    btn.classList.add('added');
+    setTimeout(() => btn.classList.remove('added'), 1000);
+};
+
+// Adiciona e ABRE o carrinho imediatamente (Fluxo "Comprar")
+window.buyNow = (id) => {
+    window.addToCart(id);
+    openCart();
 };
 
 window.removeFromCart = (id) => {
@@ -82,14 +100,12 @@ window.changeQuantity = (id, change) => {
 };
 
 function updateCartUI() {
-    // Atualiza contadores
     const totalItems = state.cart.reduce((acc, item) => acc + item.quantity, 0);
     const totalPrice = state.cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
     cartCount.innerText = totalItems;
     cartTotal.innerText = `R$ ${totalPrice.toFixed(2).replace('.', ',')}`;
 
-    // Renderiza Itens do Carrinho
     cartItemsContainer.innerHTML = '';
     
     if (state.cart.length === 0) {
@@ -123,10 +139,11 @@ function saveCart() {
     localStorage.setItem('alphaCart', JSON.stringify(state.cart));
 }
 
-// 3. UI Interactions
+// --- INTERAÇÃO UI ---
+
 function openCart() {
     cartSidebar.classList.add('open');
-    document.body.style.overflow = 'hidden'; // Bloqueia scroll
+    document.body.style.overflow = 'hidden';
 }
 
 function closeCart() {
@@ -134,24 +151,19 @@ function closeCart() {
     document.body.style.overflow = 'auto';
 }
 
-// Event Listeners
 openCartBtn.addEventListener('click', openCart);
 closeCartBtn.addEventListener('click', closeCart);
 
 filterBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
-        // Remove active class de todos
         filterBtns.forEach(b => b.classList.remove('active'));
-        // Adiciona ao clicado
         e.target.classList.add('active');
-        
-        // Atualiza estado e renderiza
         state.filter = e.target.dataset.filter;
         renderProducts();
     });
 });
 
-// Inicialização
+// Init
 document.addEventListener('DOMContentLoaded', () => {
     renderProducts();
     updateCartUI();
