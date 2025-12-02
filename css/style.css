@@ -693,7 +693,7 @@ header {
     }
     
     .logo-img {
-        height: 100px; /* Logo menor, mas ainda vazando a barra */
+        height: 80px; /* Logo menor, mas ainda vazando a barra */
         top: -5px;
     }
 }
