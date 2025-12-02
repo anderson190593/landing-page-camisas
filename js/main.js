@@ -1,13 +1,16 @@
 // js/main.js
 import { products } from './products.js';
 
-// Estado
+// --- CONFIGURAÇÃO ---
+const LOJA_WHATSAPP = "5511999999999"; // Coloque seu número aqui (com 55 + DDD)
+
+// Estado da Aplicação
 const state = {
     cart: JSON.parse(localStorage.getItem('alphaCart')) || [],
     filter: 'all'
 };
 
-// Elementos
+// Elementos do DOM
 const productGrid = document.getElementById('product-grid');
 const cartCount = document.getElementById('cart-count');
 const cartTotal = document.getElementById('cart-total');
@@ -16,9 +19,9 @@ const filterBtns = document.querySelectorAll('.filter-btn');
 const cartSidebar = document.getElementById('cart-sidebar');
 const openCartBtn = document.getElementById('open-cart');
 const closeCartBtn = document.getElementById('close-cart');
+const checkoutBtn = document.querySelector('.checkout-btn'); // Seleciona o botão de checkout
 
-// --- FUNÇÕES DE RENDERIZAÇÃO ---
-
+// --- RENDERIZAÇÃO DE PRODUTOS ---
 function renderProducts() {
     productGrid.innerHTML = '';
     
@@ -30,17 +33,16 @@ function renderProducts() {
         const card = document.createElement('div');
         card.className = 'product-card fade-in';
         
-        // AQUI ESTÁ A MUDANÇA: Botões de Ação Separados
         card.innerHTML = `
             <div class="product-image-wrapper">
                 ${product.badge ? `<span class="badge">${product.badge}</span>` : ''}
                 <img src="${product.image}" alt="${product.name}" loading="lazy">
                 
                 <div class="product-actions">
-                    <button class="btn-icon" onclick="addToCart(${product.id})" title="Adicionar ao Carrinho">
+                    <button class="btn-icon" onclick="window.addToCart(${product.id})" title="Adicionar ao Carrinho">
                         <i class="fas fa-cart-plus"></i>
                     </button>
-                    <button class="btn-buy" onclick="buyNow(${product.id})" title="Comprar Agora">
+                    <button class="btn-buy" onclick="window.buyNow(${product.id})" title="Comprar Agora">
                         Comprar
                     </button>
                 </div>
@@ -55,9 +57,8 @@ function renderProducts() {
     });
 }
 
-// --- LÓGICA DO CARRINHO ---
+// --- FUNÇÕES DO CARRINHO (Globais para acesso via HTML) ---
 
-// Adiciona e apenas notifica (sutil)
 window.addToCart = (id) => {
     const product = products.find(p => p.id === id);
     const existingItem = state.cart.find(item => item.id === id);
@@ -71,13 +72,14 @@ window.addToCart = (id) => {
     updateCartUI();
     saveCart();
     
-    // Feedback visual rápido no botão (opcional, mas bom para UX)
+    // Feedback visual (opcional)
     const btn = event.currentTarget;
-    btn.classList.add('added');
-    setTimeout(() => btn.classList.remove('added'), 1000);
+    if(btn) {
+        btn.classList.add('added');
+        setTimeout(() => btn.classList.remove('added'), 1000);
+    }
 };
 
-// Adiciona e ABRE o carrinho imediatamente (Fluxo "Comprar")
 window.buyNow = (id) => {
     window.addToCart(id);
     openCart();
@@ -99,6 +101,32 @@ window.changeQuantity = (id, change) => {
     }
 };
 
+// --- CHECKOUT VIA WHATSAPP ---
+function finalizePurchase() {
+    if (state.cart.length === 0) {
+        alert("Seu carrinho está vazio!");
+        return;
+    }
+
+    let message = "Olá! Gostaria de finalizar meu pedido na *Alpha Outfits*:\n\n";
+
+    state.cart.forEach(item => {
+        message += `• ${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}\n`;
+    });
+
+    const total = state.cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    message += `\n*Total: R$ ${total.toFixed(2).replace('.', ',')}*`;
+    message += `\n\nAguardo instruções de pagamento.`;
+
+    // Codifica a mensagem para URL
+    const encodedMessage = encodeURIComponent(message);
+    const url = `https://wa.me/${LOJA_WHATSAPP}?text=${encodedMessage}`;
+
+    // Abre o WhatsApp
+    window.open(url, '_blank');
+}
+
+// --- ATUALIZAÇÃO DA UI ---
 function updateCartUI() {
     const totalItems = state.cart.reduce((acc, item) => acc + item.quantity, 0);
     const totalPrice = state.cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
@@ -110,7 +138,13 @@ function updateCartUI() {
     
     if (state.cart.length === 0) {
         cartItemsContainer.innerHTML = '<p class="empty-cart-msg">Seu carrinho está vazio.</p>';
+        // Desabilita botão se vazio
+        checkoutBtn.style.opacity = '0.5';
+        checkoutBtn.style.pointerEvents = 'none';
         return;
+    } else {
+        checkoutBtn.style.opacity = '1';
+        checkoutBtn.style.pointerEvents = 'auto';
     }
 
     state.cart.forEach(item => {
@@ -122,12 +156,12 @@ function updateCartUI() {
                 <h4>${item.name}</h4>
                 <p>R$ ${item.price.toFixed(2).replace('.', ',')}</p>
                 <div class="quantity-controls">
-                    <button onclick="changeQuantity(${item.id}, -1)">-</button>
+                    <button onclick="window.changeQuantity(${item.id}, -1)">-</button>
                     <span>${item.quantity}</span>
-                    <button onclick="changeQuantity(${item.id}, 1)">+</button>
+                    <button onclick="window.changeQuantity(${item.id}, 1)">+</button>
                 </div>
             </div>
-            <button class="remove-btn" onclick="removeFromCart(${item.id})">
+            <button class="remove-btn" onclick="window.removeFromCart(${item.id})">
                 <i class="fas fa-trash"></i>
             </button>
         `;
@@ -139,8 +173,7 @@ function saveCart() {
     localStorage.setItem('alphaCart', JSON.stringify(state.cart));
 }
 
-// --- INTERAÇÃO UI ---
-
+// --- EVENTOS ---
 function openCart() {
     cartSidebar.classList.add('open');
     document.body.style.overflow = 'hidden';
@@ -154,6 +187,11 @@ function closeCart() {
 openCartBtn.addEventListener('click', openCart);
 closeCartBtn.addEventListener('click', closeCart);
 
+// Adiciona evento ao botão de checkout (se ele existir)
+if (checkoutBtn) {
+    checkoutBtn.addEventListener('click', finalizePurchase);
+}
+
 filterBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
         filterBtns.forEach(b => b.classList.remove('active'));
@@ -163,7 +201,7 @@ filterBtns.forEach(btn => {
     });
 });
 
-// Init
+// Inicialização
 document.addEventListener('DOMContentLoaded', () => {
     renderProducts();
     updateCartUI();

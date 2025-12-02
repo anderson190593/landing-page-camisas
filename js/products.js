@@ -1,5 +1,4 @@
 // js/products.js
-
 export const products = [
     {
         id: 1,
@@ -36,7 +35,7 @@ export const products = [
         name: "Alpha Urban Fit",
         category: "sport",
         price: 99.90,
-        image: "images/cliente-1.jpg"
+        image: "images/cliente-1.jpg" 
     },
     {
         id: 6,
