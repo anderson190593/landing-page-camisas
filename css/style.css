@@ -697,3 +697,12 @@ header {
         top: -5px;
     }
 }
+/* --- COMPORTAMENTO DO WHATSAPP QUANDO O CARRINHO ABRE --- */
+
+/* Quando o body tem a classe 'cart-open', o botão do WhatsApp muda */
+body.cart-open .whatsapp-btn {
+    opacity: 0;             /* Fica invisível */
+    visibility: hidden;     /* Não recebe cliques */
+    transform: translateY(20px) scale(0.8); /* Efeito de "cair" para baixo */
+    pointer-events: none;   /* Garante que não atrapalhe nada */
+}

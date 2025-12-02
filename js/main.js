@@ -2,7 +2,7 @@
 import { products } from './products.js';
 
 // --- CONFIGURAÇÃO ---
-const LOJA_WHATSAPP = "5511999999999"; // Coloque seu número aqui (com 55 + DDD)
+const LOJA_WHATSAPP = "5537999347154"; // Coloque seu número aqui (com 55 + DDD)
 
 // Estado da Aplicação
 const state = {
@@ -176,11 +176,13 @@ function saveCart() {
 // --- EVENTOS ---
 function openCart() {
     cartSidebar.classList.add('open');
+    document.body.classList.add('cart-open'); // NOVA LINHA: Marca que o carrinho abriu
     document.body.style.overflow = 'hidden';
 }
 
 function closeCart() {
     cartSidebar.classList.remove('open');
+    document.body.classList.remove('cart-open'); // NOVA LINHA: Remove a marca
     document.body.style.overflow = 'auto';
 }
 
