@@ -28,11 +28,12 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.5rem 5%;
+    padding: 0 5%; /* Removemos o padding vertical */
+    height: 80px;  /* Definimos uma ALTURA FIXA para a barra não crescer */
     position: fixed;
     width: 100%;
     top: 0;
-    background: rgba(10, 10, 10, 0.9);
+    background: rgba(10, 10, 10, 0.95); /* Um pouco mais escuro para leitura */
     backdrop-filter: blur(10px);
     z-index: 100;
     border-bottom: 1px solid var(--border-color);
@@ -647,17 +648,27 @@ header {
 
 /* Header Logo Styles */
 .logo-link {
+    position: relative;
+    height: 100%;
     display: flex;
     align-items: center;
-    text-decoration: none;
+    width: 120px; /* Reserva um espaço lateral para o texto não encostar */
 }
 
 .logo-img {
-    height: 50px; /* Tamanho ideal para o header */
-    width: auto;  /* Mantém a proporção */
-    display: block;
-    /* Se a imagem tiver fundo preto e não for transparente, isso ajuda a misturar */
-    mix-blend-mode: screen; 
+    height: 90px; /* AUMENTADO: Bem maior que a barra (80px) */
+    width: auto;
+    
+    /* O SEGREDO: Posição Absoluta */
+    position: absolute; 
+    top: -3px; /* Ajuste para colar no topo ou descer um pouco */
+    left: 0;
+    
+    /* Garante que fique por cima de tudo */
+    z-index: 101; 
+    
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5)); /* Sombra para destacar do fundo */
+    transition: transform 0.3s ease;
 }
 
 /* ... código anterior ... */
@@ -671,4 +682,18 @@ header {
     /* mix-blend-mode opcional dependendo do fundo da imagem */
 }
 
-/* ... resto do código ... */
+.logo-img:hover {
+    transform: scale(1.05); /* Zoom suave */
+}
+
+/* Ajuste no Mobile para não cobrir a tela */
+@media (max-width: 768px) {
+    header {
+        height: 70px; /* Barra um pouco menor no celular */
+    }
+    
+    .logo-img {
+        height: 100px; /* Logo menor, mas ainda vazando a barra */
+        top: -5px;
+    }
+}
