@@ -706,3 +706,55 @@ body.cart-open .whatsapp-btn {
     transform: translateY(20px) scale(0.8); /* Efeito de "cair" para baixo */
     pointer-events: none;   /* Garante que não atrapalhe nada */
 }
+
+/* --- SELETOR DE TAMANHOS --- */
+.size-selector {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 10px 0;
+}
+
+.size-btn {
+    width: 35px;
+    height: 35px;
+    border: 1px solid #444;
+    background: transparent;
+    color: #888;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.size-btn:hover {
+    border-color: var(--text-color);
+    color: var(--text-color);
+}
+
+/* Estado Selecionado */
+.size-btn.selected {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: #000;
+    font-weight: 800;
+    transform: scale(1.1);
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+}
+
+/* Animação de erro (quando tenta comprar sem escolher) */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); border-color: #ff4444; color: #ff4444; }
+    75% { transform: translateX(5px); border-color: #ff4444; color: #ff4444; }
+}
+
+.size-error {
+    animation: shake 0.4s ease-in-out;
+}
+
+/* Ajuste no layout do card para caber os tamanhos */
+.product-info {
+    padding: 1rem 1.5rem 1.5rem; /* Ajuste leve no padding */
+}

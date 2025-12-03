@@ -2,12 +2,14 @@
 import { products } from './products.js';
 
 // --- CONFIGURAÇÃO ---
-const LOJA_WHATSAPP = "5537999347154"; // Coloque seu número aqui (com 55 + DDD)
+const LOJA_WHATSAPP = "5537999347154"; 
 
 // Estado da Aplicação
 const state = {
     cart: JSON.parse(localStorage.getItem('alphaCart')) || [],
-    filter: 'all'
+    filter: 'all',
+    // Armazena temporariamente o tamanho selecionado de cada produto { idProduto: 'M' }
+    selections: {} 
 };
 
 // Elementos do DOM
@@ -19,7 +21,7 @@ const filterBtns = document.querySelectorAll('.filter-btn');
 const cartSidebar = document.getElementById('cart-sidebar');
 const openCartBtn = document.getElementById('open-cart');
 const closeCartBtn = document.getElementById('close-cart');
-const checkoutBtn = document.querySelector('.checkout-btn'); // Seleciona o botão de checkout
+const checkoutBtn = document.querySelector('.checkout-btn');
 
 // --- RENDERIZAÇÃO DE PRODUTOS ---
 function renderProducts() {
@@ -32,7 +34,14 @@ function renderProducts() {
     filteredProducts.forEach(product => {
         const card = document.createElement('div');
         card.className = 'product-card fade-in';
+        card.id = `card-${product.id}`; // Identificador único para o card
         
+        // Botões de tamanho
+        const sizes = ['P', 'M', 'G', 'GG'];
+        const sizeButtonsHTML = sizes.map(size => 
+            `<button class="size-btn" onclick="window.selectSize(${product.id}, '${size}')">${size}</button>`
+        ).join('');
+
         card.innerHTML = `
             <div class="product-image-wrapper">
                 ${product.badge ? `<span class="badge">${product.badge}</span>` : ''}
@@ -50,6 +59,11 @@ function renderProducts() {
             <div class="product-info">
                 <span class="category">${product.category}</span>
                 <h3>${product.name}</h3>
+                
+                <div class="size-selector" id="sizes-${product.id}">
+                    ${sizeButtonsHTML}
+                </div>
+
                 <p class="price">R$ ${product.price.toFixed(2).replace('.', ',')}</p>
             </div>
         `;
@@ -57,45 +71,94 @@ function renderProducts() {
     });
 }
 
-// --- FUNÇÕES DO CARRINHO (Globais para acesso via HTML) ---
+// --- LÓGICA DE SELEÇÃO DE TAMANHO ---
+window.selectSize = (productId, size) => {
+    // 1. Salva a seleção no estado
+    state.selections[productId] = size;
+
+    // 2. Atualiza visualmente os botões
+    const container = document.getElementById(`sizes-${productId}`);
+    const buttons = container.querySelectorAll('.size-btn');
+    
+    buttons.forEach(btn => {
+        btn.classList.remove('selected', 'size-error'); // Remove erro e seleção anterior
+        if (btn.innerText === size) {
+            btn.classList.add('selected');
+        }
+    });
+};
+
+// --- FUNÇÕES DO CARRINHO ---
 
 window.addToCart = (id) => {
+    // Verifica se tem tamanho selecionado
+    const selectedSize = state.selections[id];
+
+    if (!selectedSize) {
+        // Efeito visual de ERRO (tremer os botões)
+        const container = document.getElementById(`sizes-${id}`);
+        const buttons = container.querySelectorAll('.size-btn');
+        buttons.forEach(btn => {
+            btn.classList.remove('size-error');
+            void btn.offsetWidth; // Trigger reflow para reiniciar animação
+            btn.classList.add('size-error');
+        });
+        return; // Para a execução
+    }
+
     const product = products.find(p => p.id === id);
-    const existingItem = state.cart.find(item => item.id === id);
+    
+    // Cria um ID único para o item no carrinho (ID do produto + Tamanho)
+    // Ex: Se o ID do produto é 1 e tamanho M, o cartId será "1-M"
+    const cartId = `${product.id}-${selectedSize}`;
+
+    const existingItem = state.cart.find(item => item.cartId === cartId);
 
     if (existingItem) {
         existingItem.quantity += 1;
     } else {
-        state.cart.push({ ...product, quantity: 1 });
+        state.cart.push({ 
+            ...product, 
+            cartId: cartId, // Importante para diferenciar
+            size: selectedSize, // Salva o tamanho para exibir
+            quantity: 1 
+        });
     }
 
     updateCartUI();
     saveCart();
     
-    // Feedback visual (opcional)
-    const btn = event.currentTarget;
-    if(btn) {
-        btn.classList.add('added');
-        setTimeout(() => btn.classList.remove('added'), 1000);
+    // Feedback visual
+    const btnIcon = document.querySelector(`#card-${id} .btn-icon`);
+    if(btnIcon) {
+        btnIcon.classList.add('added');
+        setTimeout(() => btnIcon.classList.remove('added'), 1000);
     }
 };
 
 window.buyNow = (id) => {
-    window.addToCart(id);
-    openCart();
+    // Tenta adicionar (se não tiver tamanho, a função addToCart já barra e mostra erro)
+    const selectedSize = state.selections[id];
+    if (selectedSize) {
+        window.addToCart(id);
+        openCart();
+    } else {
+        window.addToCart(id); // Chama só para disparar o efeito de erro
+    }
 };
 
-window.removeFromCart = (id) => {
-    state.cart = state.cart.filter(item => item.id !== id);
+window.removeFromCart = (cartId) => {
+    // Agora removemos pelo cartId (ID + Tamanho)
+    state.cart = state.cart.filter(item => item.cartId !== cartId);
     updateCartUI();
     saveCart();
 };
 
-window.changeQuantity = (id, change) => {
-    const item = state.cart.find(item => item.id === id);
+window.changeQuantity = (cartId, change) => {
+    const item = state.cart.find(item => item.cartId === cartId);
     if (item) {
         item.quantity += change;
-        if (item.quantity <= 0) window.removeFromCart(id);
+        if (item.quantity <= 0) window.removeFromCart(cartId);
         else updateCartUI();
         saveCart();
     }
@@ -111,18 +174,17 @@ function finalizePurchase() {
     let message = "Olá! Gostaria de finalizar meu pedido na *Alpha Outfits*:\n\n";
 
     state.cart.forEach(item => {
-        message += `• ${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}\n`;
+        // Adiciona o tamanho na mensagem
+        message += `• ${item.quantity}x ${item.name} *(Tam: ${item.size})* - R$ ${(item.price * item.quantity).toFixed(2)}\n`;
     });
 
     const total = state.cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
     message += `\n*Total: R$ ${total.toFixed(2).replace('.', ',')}*`;
     message += `\n\nAguardo instruções de pagamento.`;
 
-    // Codifica a mensagem para URL
     const encodedMessage = encodeURIComponent(message);
     const url = `https://wa.me/${LOJA_WHATSAPP}?text=${encodedMessage}`;
 
-    // Abre o WhatsApp
     window.open(url, '_blank');
 }
 
@@ -138,30 +200,35 @@ function updateCartUI() {
     
     if (state.cart.length === 0) {
         cartItemsContainer.innerHTML = '<p class="empty-cart-msg">Seu carrinho está vazio.</p>';
-        // Desabilita botão se vazio
-        checkoutBtn.style.opacity = '0.5';
-        checkoutBtn.style.pointerEvents = 'none';
+        if(checkoutBtn) {
+            checkoutBtn.style.opacity = '0.5';
+            checkoutBtn.style.pointerEvents = 'none';
+        }
         return;
     } else {
-        checkoutBtn.style.opacity = '1';
-        checkoutBtn.style.pointerEvents = 'auto';
+        if(checkoutBtn) {
+            checkoutBtn.style.opacity = '1';
+            checkoutBtn.style.pointerEvents = 'auto';
+        }
     }
 
     state.cart.forEach(item => {
         const itemEl = document.createElement('div');
         itemEl.className = 'cart-item';
+        
+        // Passamos o 'cartId' (string) para as funções, por isso as aspas simples '${item.cartId}'
         itemEl.innerHTML = `
             <img src="${item.image}" alt="${item.name}">
             <div class="cart-item-info">
-                <h4>${item.name}</h4>
+                <h4>${item.name} <span style="color: #888; font-size: 0.8em;">(${item.size})</span></h4>
                 <p>R$ ${item.price.toFixed(2).replace('.', ',')}</p>
                 <div class="quantity-controls">
-                    <button onclick="window.changeQuantity(${item.id}, -1)">-</button>
+                    <button onclick="window.changeQuantity('${item.cartId}', -1)">-</button>
                     <span>${item.quantity}</span>
-                    <button onclick="window.changeQuantity(${item.id}, 1)">+</button>
+                    <button onclick="window.changeQuantity('${item.cartId}', 1)">+</button>
                 </div>
             </div>
-            <button class="remove-btn" onclick="window.removeFromCart(${item.id})">
+            <button class="remove-btn" onclick="window.removeFromCart('${item.cartId}')">
                 <i class="fas fa-trash"></i>
             </button>
         `;
@@ -173,23 +240,22 @@ function saveCart() {
     localStorage.setItem('alphaCart', JSON.stringify(state.cart));
 }
 
-// --- EVENTOS ---
+// --- EVENTOS UI ---
 function openCart() {
     cartSidebar.classList.add('open');
-    document.body.classList.add('cart-open'); // NOVA LINHA: Marca que o carrinho abriu
+    document.body.classList.add('cart-open');
     document.body.style.overflow = 'hidden';
 }
 
 function closeCart() {
     cartSidebar.classList.remove('open');
-    document.body.classList.remove('cart-open'); // NOVA LINHA: Remove a marca
+    document.body.classList.remove('cart-open');
     document.body.style.overflow = 'auto';
 }
 
 openCartBtn.addEventListener('click', openCart);
 closeCartBtn.addEventListener('click', closeCart);
 
-// Adiciona evento ao botão de checkout (se ele existir)
 if (checkoutBtn) {
     checkoutBtn.addEventListener('click', finalizePurchase);
 }
@@ -200,11 +266,21 @@ filterBtns.forEach(btn => {
         e.target.classList.add('active');
         state.filter = e.target.dataset.filter;
         renderProducts();
+        // Limpa seleções ao trocar filtro para evitar confusão visual
+        state.selections = {}; 
     });
 });
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', () => {
+    // Limpa o carrinho antigo se ele não tiver a estrutura nova (com cartId)
+    // Isso evita bugs para quem já acessou o site antes
+    const savedCart = JSON.parse(localStorage.getItem('alphaCart'));
+    if (savedCart && savedCart.length > 0 && !savedCart[0].cartId) {
+        localStorage.removeItem('alphaCart');
+        state.cart = [];
+    }
+
     renderProducts();
     updateCartUI();
 });
