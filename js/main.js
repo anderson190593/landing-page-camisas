@@ -1,18 +1,14 @@
 // js/main.js
 import { products } from './products.js';
 
-// --- CONFIGURAÇÃO ---
 const LOJA_WHATSAPP = "5537999347154"; 
 
-// Estado da Aplicação
 const state = {
     cart: JSON.parse(localStorage.getItem('alphaCart')) || [],
     filter: 'all',
-    // Armazena temporariamente o tamanho selecionado de cada produto { idProduto: 'M' }
     selections: {} 
 };
 
-// Elementos do DOM
 const productGrid = document.getElementById('product-grid');
 const cartCount = document.getElementById('cart-count');
 const cartTotal = document.getElementById('cart-total');
@@ -23,7 +19,7 @@ const openCartBtn = document.getElementById('open-cart');
 const closeCartBtn = document.getElementById('close-cart');
 const checkoutBtn = document.querySelector('.checkout-btn');
 
-// --- RENDERIZAÇÃO DE PRODUTOS ---
+// --- RENDERIZAÇÃO ---
 function renderProducts() {
     productGrid.innerHTML = '';
     
@@ -34,9 +30,8 @@ function renderProducts() {
     filteredProducts.forEach(product => {
         const card = document.createElement('div');
         card.className = 'product-card fade-in';
-        card.id = `card-${product.id}`; // Identificador único para o card
+        card.id = `card-${product.id}`;
         
-        // Botões de tamanho
         const sizes = ['P', 'M', 'G', 'GG'];
         const sizeButtonsHTML = sizes.map(size => 
             `<button class="size-btn" onclick="window.selectSize(${product.id}, '${size}')">${size}</button>`
@@ -71,17 +66,43 @@ function renderProducts() {
     });
 }
 
-// --- LÓGICA DE SELEÇÃO DE TAMANHO ---
+// --- LÓGICA DE SELEÇÃO E VALIDAÇÃO ---
+
+// Função auxiliar para verificar e abrir os tamanhos
+function checkAndOpenSizes(id) {
+    const selectedSize = state.selections[id];
+    const sizeContainer = document.getElementById(`sizes-${id}`);
+
+    // Se NÃO tiver tamanho selecionado
+    if (!selectedSize) {
+        // 1. Verifica se a gaveta já está aberta
+        if (!sizeContainer.classList.contains('show')) {
+            // Se fechada, ABRE ELA
+            sizeContainer.classList.add('show');
+        } else {
+            // Se já estava aberta e o usuário clicou de novo sem escolher,
+            // TREME os botões para chamar atenção (Erro)
+            const buttons = sizeContainer.querySelectorAll('.size-btn');
+            buttons.forEach(btn => {
+                btn.classList.remove('size-error');
+                void btn.offsetWidth; // Reinicia animação CSS
+                btn.classList.add('size-error');
+            });
+        }
+        return false; // Retorna falso para impedir a compra
+    }
+    
+    return selectedSize; // Retorna o tamanho se estiver tudo ok
+}
+
 window.selectSize = (productId, size) => {
-    // 1. Salva a seleção no estado
     state.selections[productId] = size;
 
-    // 2. Atualiza visualmente os botões
     const container = document.getElementById(`sizes-${productId}`);
     const buttons = container.querySelectorAll('.size-btn');
     
     buttons.forEach(btn => {
-        btn.classList.remove('selected', 'size-error'); // Remove erro e seleção anterior
+        btn.classList.remove('selected', 'size-error');
         if (btn.innerText === size) {
             btn.classList.add('selected');
         }
@@ -91,27 +112,15 @@ window.selectSize = (productId, size) => {
 // --- FUNÇÕES DO CARRINHO ---
 
 window.addToCart = (id) => {
-    // Verifica se tem tamanho selecionado
-    const selectedSize = state.selections[id];
-
-    if (!selectedSize) {
-        // Efeito visual de ERRO (tremer os botões)
-        const container = document.getElementById(`sizes-${id}`);
-        const buttons = container.querySelectorAll('.size-btn');
-        buttons.forEach(btn => {
-            btn.classList.remove('size-error');
-            void btn.offsetWidth; // Trigger reflow para reiniciar animação
-            btn.classList.add('size-error');
-        });
-        return; // Para a execução
-    }
-
-    const product = products.find(p => p.id === id);
+    // Tenta validar e abrir tamanhos se necessário
+    const selectedSize = checkAndOpenSizes(id);
     
-    // Cria um ID único para o item no carrinho (ID do produto + Tamanho)
-    // Ex: Se o ID do produto é 1 e tamanho M, o cartId será "1-M"
-    const cartId = `${product.id}-${selectedSize}`;
+    // Se retornou false, para aqui
+    if (!selectedSize) return;
 
+    // Se passou, executa a adição
+    const product = products.find(p => p.id === id);
+    const cartId = `${product.id}-${selectedSize}`;
     const existingItem = state.cart.find(item => item.cartId === cartId);
 
     if (existingItem) {
@@ -119,8 +128,8 @@ window.addToCart = (id) => {
     } else {
         state.cart.push({ 
             ...product, 
-            cartId: cartId, // Importante para diferenciar
-            size: selectedSize, // Salva o tamanho para exibir
+            cartId: cartId, 
+            size: selectedSize, 
             quantity: 1 
         });
     }
@@ -128,7 +137,6 @@ window.addToCart = (id) => {
     updateCartUI();
     saveCart();
     
-    // Feedback visual
     const btnIcon = document.querySelector(`#card-${id} .btn-icon`);
     if(btnIcon) {
         btnIcon.classList.add('added');
@@ -137,18 +145,16 @@ window.addToCart = (id) => {
 };
 
 window.buyNow = (id) => {
-    // Tenta adicionar (se não tiver tamanho, a função addToCart já barra e mostra erro)
-    const selectedSize = state.selections[id];
-    if (selectedSize) {
-        window.addToCart(id);
-        openCart();
-    } else {
-        window.addToCart(id); // Chama só para disparar o efeito de erro
-    }
+    const selectedSize = checkAndOpenSizes(id);
+    
+    if (!selectedSize) return;
+
+    // Adiciona e abre o carrinho
+    window.addToCart(id);
+    openCart();
 };
 
 window.removeFromCart = (cartId) => {
-    // Agora removemos pelo cartId (ID + Tamanho)
     state.cart = state.cart.filter(item => item.cartId !== cartId);
     updateCartUI();
     saveCart();
@@ -164,7 +170,6 @@ window.changeQuantity = (cartId, change) => {
     }
 };
 
-// --- CHECKOUT VIA WHATSAPP ---
 function finalizePurchase() {
     if (state.cart.length === 0) {
         alert("Seu carrinho está vazio!");
@@ -174,7 +179,6 @@ function finalizePurchase() {
     let message = "Olá! Gostaria de finalizar meu pedido na *Alpha Outfits*:\n\n";
 
     state.cart.forEach(item => {
-        // Adiciona o tamanho na mensagem
         message += `• ${item.quantity}x ${item.name} *(Tam: ${item.size})* - R$ ${(item.price * item.quantity).toFixed(2)}\n`;
     });
 
@@ -188,7 +192,6 @@ function finalizePurchase() {
     window.open(url, '_blank');
 }
 
-// --- ATUALIZAÇÃO DA UI ---
 function updateCartUI() {
     const totalItems = state.cart.reduce((acc, item) => acc + item.quantity, 0);
     const totalPrice = state.cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
@@ -216,7 +219,6 @@ function updateCartUI() {
         const itemEl = document.createElement('div');
         itemEl.className = 'cart-item';
         
-        // Passamos o 'cartId' (string) para as funções, por isso as aspas simples '${item.cartId}'
         itemEl.innerHTML = `
             <img src="${item.image}" alt="${item.name}">
             <div class="cart-item-info">
@@ -240,7 +242,6 @@ function saveCart() {
     localStorage.setItem('alphaCart', JSON.stringify(state.cart));
 }
 
-// --- EVENTOS UI ---
 function openCart() {
     cartSidebar.classList.add('open');
     document.body.classList.add('cart-open');
@@ -266,15 +267,11 @@ filterBtns.forEach(btn => {
         e.target.classList.add('active');
         state.filter = e.target.dataset.filter;
         renderProducts();
-        // Limpa seleções ao trocar filtro para evitar confusão visual
         state.selections = {}; 
     });
 });
 
-// Inicialização
 document.addEventListener('DOMContentLoaded', () => {
-    // Limpa o carrinho antigo se ele não tiver a estrutura nova (com cartId)
-    // Isso evita bugs para quem já acessou o site antes
     const savedCart = JSON.parse(localStorage.getItem('alphaCart'));
     if (savedCart && savedCart.length > 0 && !savedCart[0].cartId) {
         localStorage.removeItem('alphaCart');
